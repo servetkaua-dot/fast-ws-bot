@@ -1,0 +1,13 @@
+[Unit]
+Description=Crypto WebSocket ML Fast Bot
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/crypto-ws-ml-fast-bot
+ExecStart=/root/crypto-ws-ml-fast-bot/.venv/bin/python app/main.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
