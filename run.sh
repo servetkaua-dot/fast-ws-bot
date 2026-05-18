@@ -1,4 +1,20 @@
 #!/bin/bash
-cd "$(dirname "$0")"
+
+# =============================================
+# HS ML Trading Bot - Launcher
+# =============================================
+
+PROJECT_DIR="/root/fast-ws-bot-main"
+cd "$PROJECT_DIR"
+
+# Активируем виртуальное окружение
 source .venv/bin/activate
-python app/main.py
+
+echo "========================================"
+echo "🚀 HS ML Bot Starting..."
+echo "📍 Directory: $PROJECT_DIR"
+echo "📅 Time: $(date)"
+echo "========================================"
+
+# Запускаем бота
+python main.py
