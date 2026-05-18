@@ -1,80 +1,112 @@
-import os, joblib, ccxt
+import os
+import joblib
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+import lightgbm as lgb
+from datetime import datetime
 from app.config import MODEL_PATH
+import ccxt
 
 EXCHANGE = ccxt.binance({"enableRateLimit": True})
 
-def fetch_ohlcv(symbol: str, timeframe: str = "5m", limit: int = 120) -> pd.DataFrame:
-    bars = EXCHANGE.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
-    return pd.DataFrame(bars, columns=["timestamp", "open", "high", "low", "close", "volume"])
+def fetch_ohlcv(symbol: str, timeframe: str = "5m", limit: int = 2000):
+    bars = EXCHANGE.fetch_ohlcv(symbol, timeframe, limit=limit)
+    df = pd.DataFrame(bars, columns=["timestamp", "open", "high", "low", "close", "volume"])
+    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+    return df
 
 def add_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["returns"] = df["close"].pct_change()
-    df["volatility"] = df["returns"].rolling(10).std().fillna(0)
+    df["volatility"] = df["returns"].rolling(14).std()
+    
     df["ema20"] = df["close"].ewm(span=20).mean()
     df["ema50"] = df["close"].ewm(span=50).mean()
     df["ema200"] = df["close"].ewm(span=200).mean()
-    delta = df["close"].diff()
-    gain = delta.clip(lower=0).rolling(14).mean()
-    loss = (-delta.clip(upper=0)).rolling(14).mean()
-    rs = gain / loss.replace(0, np.nan)
-    df["rsi"] = (100 - (100 / (1 + rs))).fillna(50)
+    
+    df["rsi"] = 100 - (100 / (1 + (df["returns"].clip(lower=0).rolling(14).mean() / 
+                                 df["returns"].clip(upper=0).abs().rolling(14).mean())))
+    
+    # Bollinger
     mid = df["close"].rolling(20).mean()
     std = df["close"].rolling(20).std()
-    df["boll_mid"] = mid
-    df["boll_upper"] = mid + 2 * std
-    df["boll_lower"] = mid - 2 * std
-    df["boll_width"] = ((df["boll_upper"] - df["boll_lower"]) / df["close"]).fillna(0)
-    avg_vol = df["volume"].rolling(20).mean()
-    df["volume_ratio"] = (df["volume"] / avg_vol).replace([np.inf, -np.inf], 0).fillna(0)
+    df["boll_width"] = (mid + 2*std - (mid - 2*std)) / df["close"]
+    
+    df["volume_ratio"] = df["volume"] / df["volume"].rolling(30).mean()
+    
+    # === Новый сильный target ===
+    future_bars = 6  # ~30 минут
+    df["future_return"] = df["close"].shift(-future_bars) / df["close"] - 1
+    df["target"] = (df["future_return"] > 0.0018).astype(int)   # > 0.18% профита
+
     return df.dropna().reset_index(drop=True)
 
 class MLEngine:
     def __init__(self):
         if os.path.exists(MODEL_PATH):
             self.model = joblib.load(MODEL_PATH)
+            print(f"[ML] Model loaded: {MODEL_PATH}")
         else:
-            self.model = RandomForestClassifier(n_estimators=80, max_depth=6, random_state=42)
+            self.model = None
+            print("[ML] No model found. Train first.")
 
-    def train(self, symbol: str = "ETH/USDT"):
-        df = add_features(fetch_ohlcv(symbol, limit=300))
-        df["target"] = (df["close"].shift(-3) > df["close"]).astype(int)
-        df = df.dropna()
-        features = ["returns", "volatility", "rsi", "ema20", "ema50", "ema200", "boll_width", "volume_ratio"]
-        self.model.fit(df[features], df["target"])
+    def train(self, symbol: str = None):
+        if not symbol:
+            from app.config import SYMBOL
+            symbol = SYMBOL
+
+        print(f"[ML] Training on {symbol}...")
+        df = fetch_ohlcv(symbol, limit=5000)
+        df = add_features(df)
+
+        features = ["returns", "volatility", "rsi", "ema20", "ema50", "boll_width", "volume_ratio"]
+        X = df[features]
+        y = df["target"]
+
+        train_data = lgb.Dataset(X, label=y)
+
+        params = {
+            'objective': 'binary',
+            'metric': 'auc',
+            'boosting_type': 'gbdt',
+            'num_leaves': 31,
+            'learning_rate': 0.05,
+            'feature_fraction': 0.8,
+            'bagging_fraction': 0.8,
+            'verbose': -1,
+            'random_state': 42
+        }
+
+        self.model = lgb.train(params, train_data, num_boost_round=300)
+        
         os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
         joblib.dump(self.model, MODEL_PATH)
-        print("[OK] model trained:", MODEL_PATH)
+        print(f"[OK] Model trained and saved: {MODEL_PATH}")
 
     def predict(self, symbol: str) -> dict:
-        df = add_features(fetch_ohlcv(symbol, limit=120))
-        features = ["returns", "volatility", "rsi", "ema20", "ema50", "ema200", "boll_width", "volume_ratio"]
-        last = df.iloc[-1]
-        if not hasattr(self.model, "classes_"):
+        if self.model is None:
             self.train(symbol)
-        X = df[features].tail(1)
-        pred = int(self.model.predict(X)[0])
-        confidence = float(max(self.model.predict_proba(X)[0]))
-        recent = df.tail(40)
+
+        df = fetch_ohlcv(symbol, limit=500)
+        df = add_features(df)
+        if len(df) < 10:
+            return None
+
+        features = ["returns", "volatility", "rsi", "ema20", "ema50", "boll_width", "volume_ratio"]
+        X = df[features].iloc[-1:].copy()
+
+        prob = float(self.model.predict(X)[0])
+        pred = 1 if prob > 0.58 else 0   # можно поднять до 0.6+
+
+        direction = "LONG" if pred == 1 else "SHORT"
+        confidence = prob if direction == "LONG" else (1 - prob)
+
+        last = df.iloc[-1]
+
         return {
             "symbol": symbol,
-            "direction": "LONG" if pred == 1 else "SHORT",
+            "direction": direction,
             "confidence": round(confidence, 4),
-            "close": float(last["close"]),
-            "returns": float(last["returns"]),
-            "volatility": float(last["volatility"]),
-            "rsi": float(last["rsi"]),
-            "ema20": float(last["ema20"]),
-            "ema50": float(last["ema50"]),
-            "ema200": float(last["ema200"]),
-            "boll_mid": float(last["boll_mid"]),
-            "boll_upper": float(last["boll_upper"]),
-            "boll_lower": float(last["boll_lower"]),
-            "boll_width": float(last["boll_width"]),
-            "volume_ratio": float(last["volume_ratio"]),
-            "recent_high": float(recent["high"].max()),
-            "recent_low": float(recent["low"].min()),
+            "close": round(float(last["close"]), 4),
+            # ... остальные фичи по желанию
         }
