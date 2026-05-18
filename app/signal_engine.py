@@ -9,34 +9,33 @@ def calculate_risk(raw: dict) -> dict:
     symbol = raw["symbol"]
     direction = raw["direction"]
     entry = raw["close"]
-
+def calculate_risk(raw: dict) -> dict | None:
     try:
-        df = fetch_ohlcv(symbol, "5m", limit=150)
-        
-        # ATR
-        tr = pd.concat([
-            df['high'] - df['low'],
-            (df['high'] - df['close'].shift()).abs(),
-            (df['low'] - df['close'].shift()).abs()
-        ], axis=1).max(axis=1)
-        
-        atr = tr.rolling(14).mean().iloc[-1]
+        entry = raw.get("close", 0)
+        direction = raw.get("direction")
+        symbol = raw.get("symbol", SYMBOL)
 
-        if pd.isna(atr) or atr <= 0:
-            atr = entry * 0.008  # fallback
+        # Bollinger Bands (должны приходить из ml_engine)
+        bb_upper = raw.get("bb_upper", entry * 1.008)
+        bb_middle = raw.get("bb_middle", entry)
+        bb_lower = raw.get("bb_lower", entry * 0.992)
 
-        risk = atr * 1.65
-        tp1_dist = atr * 2.4
-        tp2_dist = atr * 4.1
+        if direction == "SHORT":
+            # Stop Loss — выше верхней Bollinger
+            sl = bb_upper * 1.003
+            # TP ближе к Bollinger
+            tp1 = bb_middle * 0.997
+            tp2 = bb_lower * 1.003
 
-        if direction == "LONG":
-            sl = entry - risk
-            tp1 = entry + tp1_dist
-            tp2 = entry + tp2_dist
-        else:
-            sl = entry + risk
-            tp1 = entry - tp1_dist
-            tp2 = entry - tp2_dist
+        else:  # LONG
+            # Stop Loss — ниже нижней Bollinger
+            sl = bb_lower * 0.997
+            # TP ближе к Bollinger
+            tp1 = bb_middle * 1.003
+            tp2 = bb_upper * 0.997
+
+        risk = abs(entry - sl)
+        rr = abs(tp1 - entry) / risk if risk > 0 else 2.2
 
         return {
             "symbol": symbol,
@@ -45,9 +44,38 @@ def calculate_risk(raw: dict) -> dict:
             "stop_loss": round(sl, 4),
             "tp1": round(tp1, 4),
             "tp2": round(tp2, 4),
-            "confidence": raw["confidence"],
+            "confidence": raw.get("confidence", 0.0),
             "timestamp": datetime.utcnow().isoformat()
         }
+
+    except Exception as e:
+        print(f"[RISK ERROR] {e}")
+        # Fallback (оставляем твой старый)
+        risk_pct = 0.012
+        tp1_pct = 0.022
+        tp2_pct = 0.045
+        if direction == "LONG":
+            return {
+                "symbol": symbol,
+                "direction": direction,
+                "entry": round(entry, 4),
+                "stop_loss": round(entry * (1 - risk_pct), 4),
+                "tp1": round(entry * (1 + tp1_pct), 4),
+                "tp2": round(entry * (1 + tp2_pct), 4),
+                "confidence": raw.get("confidence", 0.0),
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        else:  # SHORT fallback
+            return {
+                "symbol": symbol,
+                "direction": direction,
+                "entry": round(entry, 4),
+                "stop_loss": round(entry * (1 + risk_pct), 4),
+                "tp1": round(entry * (1 - tp1_pct), 4),
+                "tp2": round(entry * (1 - tp2_pct), 4),
+                "confidence": raw.get("confidence", 0.0),
+                "timestamp": datetime.utcnow().isoformat()
+            }
     except:
         # Fallback
         risk_pct = 0.012
