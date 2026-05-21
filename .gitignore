@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+logs/
+*.log
+.env
+data/*.csv
+models/*.pkl
+
