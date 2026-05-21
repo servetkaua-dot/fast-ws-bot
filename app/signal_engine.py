@@ -115,10 +115,10 @@ def build_trade_signal(raw: dict):
 
     # Фильтры
     if direction == "LONG":
-        if rsi > 82 or (close < ema20 and close < ema50):
+        if rsi > 68 or (close < ema20 and close < ema50):
             return None
     elif direction == "SHORT":
-        if rsi < 18 or (close > ema20 and close > ema50):
+        if rsi < 35 or (close > ema20 and close > ema50):
             return None
 
     if volume_ratio < 0.35:

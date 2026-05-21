@@ -1,13 +1,18 @@
 [Unit]
-Description=Crypto WebSocket ML Fast Bot
+Description=HS ML Crypto Trading Bot
 After=network.target
+Wants=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/root/crypto-ws-ml-fast-bot
-ExecStart=/root/crypto-ws-ml-fast-bot/.venv/bin/python app/main.py
+User=root
+WorkingDirectory=/root/fast-ws-bot-main
+ExecStart=/bin/bash -c 'source /root/fast-ws-bot-main.
 Restart=always
 RestartSec=10
+StandartOutput=journal
+StandartError=journal
+Environment=RYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=multi-user.target

@@ -52,9 +52,9 @@ class TradeTracker:
     def print_stats(self):
         stats = self.get_stats()
         print(f"\n📊 СТАТИСТИКА ТОРГОВЛИ")
-        print(f"Всего сделок: {stats['total_trades']}")
-        print(f"Win Rate: {stats['win_rate']}% ({stats['wins']} WIN / {stats['losses']} LOSS)")
-        print(f"Average RR: {stats['avg_rr']}")
+        print(f"Всего сделок: {stats.get('total_trades',0)}")
+        print(f"Win Rate: {stats.get('win_rate')}% ({stats('wins',0)} WIN / {stats.get('losses',0)} LOSS)")
+        print(f"Average RR: {stats.get('avg_rr',0)}")
         print("-" * 40)
 
 # Для теста

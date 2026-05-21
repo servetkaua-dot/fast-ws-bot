@@ -16,7 +16,8 @@ from app.signal_engine import build_trade_signal
 from app.telegram import send_telegram
 from app.anti_duplicate import is_duplicate
 from app.logger import log_signal, save_signal
-
+from trade_tracker import TradeTracker
+tracker = TradeTracker()
 # Глобальные переменные для контроля
 last_ml_time = 0
 ml_running = False
@@ -88,7 +89,7 @@ Confidence: <b>{signal['confidence']*100:.1f}%</b>
 
 async def main():
     print(f"[START] HS ML Bot started → {SYMBOL} | {datetime.utcnow().isoformat()}")
-    
+    #tracker.print_stats()
     trigger = VolumeTrigger()
     await trigger.listen(on_volume_trigger)
 

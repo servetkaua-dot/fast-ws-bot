@@ -12,7 +12,7 @@ class VolumeTrigger:
         self.volumes = []
         self.prices = []
         self.last_trigger_time = 0
-
+        self.last_print_time = 0
     async def listen(self, on_trigger):
         print(f"[WS] Connecting to {WS_URL}")
         reconnect_delay = 1
@@ -34,6 +34,11 @@ class VolumeTrigger:
                         if len(self.volumes) > 60:
                             self.volumes.pop(0)
                             self.prices.pop(0)
+
+                        now = time . time()
+                        if now - self.last_print_time > 2:
+                            print(f"[CHECK] vol={volume:.1f} price={price:.2f} len={len(self.volumes)}")
+                            self.last_print_time= now
 
                         if len(self.volumes) < 20:
                             continue

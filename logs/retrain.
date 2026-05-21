@@ -1,0 +1,96 @@
+[2026-05-19 12:00:02.430766] Начинаем обучение модели для ETH/USDT...
+Скачиваем свежие данные...
+[ML] Model loaded from models/model.pkl
+[ML] Model loaded from models/model.pkl
+Размер train: 760, val: 191
+Начинаем обучение с валидацией...
+Training until validation scores don't improve for 50 rounds
+[50]	train's auc: 0.998859	train's binary_logloss: 0.0539636	valid's auc: 0.677193	valid's binary_logloss: 0.422185
+Early stopping, best iteration is:
+[4]	train's auc: 0.94827	train's binary_logloss: 0.193927	valid's auc: 0.664181	valid's binary_logloss: 0.339658
+
+ТОП-10 самых важных признаков:
+           feature  importance
+5       volatility           7
+9   BBL_20_2.0_2.0           6
+0             open           5
+3           volume           5
+12  BBB_20_2.0_2.0           4
+19    volume_ratio           4
+7            ema20           4
+4          returns           3
+10  BBM_20_2.0_2.0           3
+13  BBP_20_2.0_2.0           3
+[2026-05-19 12:00:05.758801] Модель успешно обучена и сохранена! AUC на валидации: 0.6642
+[2026-05-20 00:00:02.152251] Начинаем обучение модели для ETH/USDT...
+Скачиваем свежие данные...
+[ML] Model loaded from models/model.pkl
+[ML] Model loaded from models/model.pkl
+Размер train: 760, val: 191
+Начинаем обучение с валидацией...
+Training until validation scores don't improve for 50 rounds
+[50]	train's auc: 0.999074	train's binary_logloss: 0.0656875	valid's auc: 0.632456	valid's binary_logloss: 0.503213
+Early stopping, best iteration is:
+[3]	train's auc: 0.960177	train's binary_logloss: 0.251698	valid's auc: 0.728216	valid's binary_logloss: 0.318391
+
+ТОП-10 самых важных признаков:
+           feature  importance
+5       volatility           8
+0             open           7
+13  BBP_20_2.0_2.0           6
+7            ema20           5
+10  BBM_20_2.0_2.0           3
+14        bb_upper           3
+9   BBL_20_2.0_2.0           3
+6              rsi           2
+8            ema50           1
+15       bb_middle           1
+[2026-05-20 00:00:06.910186] Модель успешно обучена и сохранена! AUC на валидации: 0.7282
+[2026-05-20 12:00:02.335312] Начинаем обучение модели для ETH/USDT...
+Скачиваем свежие данные...
+[ML] Model loaded from models/model.pkl
+[ML] Model loaded from models/model.pkl
+Размер train: 760, val: 191
+Начинаем обучение с валидацией...
+Training until validation scores don't improve for 50 rounds
+[50]	train's auc: 0.997971	train's binary_logloss: 0.0924604	valid's auc: 0.79053	valid's binary_logloss: 0.355555
+Early stopping, best iteration is:
+[9]	train's auc: 0.976562	train's binary_logloss: 0.244803	valid's auc: 0.769886	valid's binary_logloss: 0.271027
+
+ТОП-10 самых важных признаков:
+           feature  importance
+18             atr          17
+13  BBP_20_2.0_2.0          17
+5       volatility          16
+7            ema20          15
+20       volume_ma          14
+12  BBB_20_2.0_2.0          13
+0             open          12
+10  BBM_20_2.0_2.0          12
+9   BBL_20_2.0_2.0          10
+19    volume_ratio           9
+[2026-05-20 12:00:06.377862] Модель успешно обучена и сохранена! AUC на валидации: 0.7699
+[2026-05-21 00:00:02.853056] Начинаем обучение модели для ETH/USDT...
+Скачиваем свежие данные...
+[ML] Model loaded from models/model.pkl
+[ML] Model loaded from models/model.pkl
+Размер train: 760, val: 191
+Начинаем обучение с валидацией...
+Training until validation scores don't improve for 50 rounds
+[50]	train's auc: 0.997851	train's binary_logloss: 0.109107	valid's auc: 0.547736	valid's binary_logloss: 0.377728
+Early stopping, best iteration is:
+[8]	train's auc: 0.971629	train's binary_logloss: 0.285628	valid's auc: 0.602356	valid's binary_logloss: 0.313391
+
+ТОП-10 самых важных признаков:
+           feature  importance
+5       volatility          18
+18             atr          16
+0             open          16
+13  BBP_20_2.0_2.0          15
+6              rsi          12
+11  BBU_20_2.0_2.0          12
+14        bb_upper          11
+9   BBL_20_2.0_2.0          11
+7            ema20          10
+12  BBB_20_2.0_2.0           8
+[2026-05-21 00:00:06.176739] Модель успешно обучена и сохранена! AUC на валидации: 0.6024

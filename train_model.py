@@ -18,14 +18,16 @@ def train_model():
     if df is None or len(df) < 5000:
         print("Скачиваем свежие данные...")
         from app.ml_engine import fetch_ohlcv
-        df = fetch_ohlcv(SYMBOL, limit=10000)
+        df = fetch_ohlcv(symbol=SYMBOL, limit=10000)
+        os.makedirs("data", exist_ok=True)
         df.to_csv(f"data/{SYMBOL.replace('/', '')}_historical.csv", index=False)
 
     df = df.sort_values('timestamp')
 
     # Добавляем признаки (то же, что в ml_engine)
-    from app.ml_engine import add_features
-    df = add_features(df)
+    from app.ml_engine import MLEngine
+    ml = MLEngine()
+    df = ml.add_features(df)
 
     # Цель — предсказание сильного движения
     df['target'] = (df['close'].shift(-6) > df['close'] * 1.003).astype(int)  # +0.3% за ~6 баров

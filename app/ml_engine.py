@@ -36,21 +36,22 @@ class MLEngine:
         df['volatility'] = df['returns'].rolling(20).std()
 
         # RSI
-        df['rsi'] = ta.momentum.rsi(df['close'], window=14)
+        df['rsi'] = ta.rsi(df['close'], length=14)
 
         # EMA
-        df['ema20'] = ta.trend.ema_indicator(df['close'], window=20)
-        df['ema50'] = ta.trend.ema_indicator(df['close'], window=50)
+        df['ema20'] = ta.ema(df['close'], length=20)
+        df['ema50'] = ta.ema(df['close'], length=50)
 
         # Bollinger Bands
-        bb = ta.volatility.BollingerBands(close=df['close'], window=20, window_dev=2)
-        df['bb_upper'] = bb.bollinger_hband()
-        df['bb_middle'] = bb.bollinger_mavg()
-        df['bb_lower'] = bb.bollinger_lband()
-        df['bb_width'] = bb.bollinger_wband()
+        bb = ta.bbands(df['close'], length=20, std=2)
+        df = pd.concat([df, bb], axis=1)
+        df['bb_upper'] = df.get('BBU_20_2.0', df.get('BBU20_2.0', df['close'] * 1.01))
+        df['bb_middle'] = df.get('BBM_20_2.0', df.get('BBM20_2.0', df['close']))
+        df['bb_lower'] = df.get('BBL_20_2.0', df.get('BBL20_2.0', df['close'] * 0.99))
+        df['bb_width'] = df.get('BBW_20_2.0',df.get('BBW_20_2.0', 0))
 
         # ATR
-        df['atr'] = ta.volatility.atr(df['high'], df['low'], df['close'], window=14)
+        df['atr'] = ta.atr(df['high'], df['low'], df['close'], length=14)
 
         # Volume features
         df['volume_ratio'] = df['volume'] / df['volume'].rolling(20).mean()
@@ -105,7 +106,9 @@ class MLEngine:
             print(f"[ML ERROR] {e}")
             return None
 
-
+def fetch_ohlcv(symbol=None, limit=5000):
+    engine = MLEngine()
+    return engine.fetch_ohlcv(symbol, limit)
 # Для теста
 if __name__ == "__main__":
     ml = MLEngine()
